@@ -1,0 +1,65 @@
+body {
+  background-color: #f9f9f9;
+  color: #333;
+  font-family: "Arial", sans-serif;
+  margin: 0;
+  padding: 20px;
+}
+
+.container {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+header {
+  text-align: center;
+}
+header h1 {
+  color: #5b9bd5;
+}
+header form {
+  margin-top: 20px;
+}
+header form input {
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  margin-right: 10px;
+}
+header form button {
+  padding: 10px 15px;
+  background-color: #5b9bd5;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+header form button:hover {
+  background-color: #3482c9;
+}
+
+.list {
+  background-color: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 20px;
+  margin-top: 20px;
+}
+.list .list-title {
+  color: #5b9bd5;
+}
+.list .items {
+  list-style: none;
+  padding: 0;
+}
+.list .itemForm {
+  margin-top: 10px;
+}
+.list .itemForm input {
+  width: 70%;
+}
+.list .itemForm button {
+  width: 28%;
+}
+
+/*# sourceMappingURL=index.css.map */
