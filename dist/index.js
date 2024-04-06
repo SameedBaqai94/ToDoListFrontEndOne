@@ -47,7 +47,39 @@ function Main() {
             }
         });
     }
-    function _addItem(itemObj) {
+    function _getItems(title) {
+        return __awaiter(this, void 0, void 0, function* () {
+            console.log(title);
+            const getId = () => __awaiter(this, void 0, void 0, function* () {
+                try {
+                    const response = yield fetch(`http://localhost:8080/api/ToDoList/GetListId?title=${title}`);
+                    if (!response.ok) {
+                        throw new Error;
+                    }
+                    const data = yield response.json();
+                    return data;
+                }
+                catch (error) {
+                    console.log(`something went wrong with fetching GET ${error}`);
+                }
+            });
+            const id = yield getId();
+            console.log(id.id);
+            try {
+                console.log(`http://localhost:8080/api/Items/GetItemsByListId?listId=${id.id}`);
+                const response = yield fetch(`http://localhost:8080/api/Items/GetItemsByListId?listId=${id.id}`);
+                if (!response.ok) {
+                    throw new Error;
+                }
+                const data = yield response.json();
+                return data;
+            }
+            catch (error) {
+                console.log(`something went wrong with fetching GET ${error}`);
+            }
+        });
+    }
+    function _addItem(itemObj, title) {
         return __awaiter(this, void 0, void 0, function* () {
             const requestOptions = {
                 method: "POST",
@@ -56,8 +88,22 @@ function Main() {
                 },
                 body: JSON.stringify(itemObj)
             };
+            const getId = () => __awaiter(this, void 0, void 0, function* () {
+                try {
+                    const response = yield fetch(`http://localhost:8080/api/ToDoList/GetListId?title=${title}`);
+                    if (!response.ok) {
+                        throw new Error;
+                    }
+                    const data = yield response.json();
+                    return data;
+                }
+                catch (error) {
+                    console.log(`something went wrong with fetching GET ${error}`);
+                }
+            });
+            const id = yield getId();
             try {
-                const response = yield fetch("http://localhost:8080/api/Items/AddItem?todolistid=1", requestOptions);
+                const response = yield fetch(`http://localhost:8080/api/Items/AddItem?todolistid=${id.id}`, requestOptions);
                 if (!response.ok) {
                     return false;
                 }
@@ -73,9 +119,10 @@ function Main() {
     this.getList = function () {
         return __awaiter(this, void 0, void 0, function* () {
             const data = yield _getList();
+            //const item: Item[] = await _getItems();
             const listTemplate = document.getElementById("listTemplate");
             //listContainer.textContent = data.title;
-            data.forEach(element => {
+            data.forEach((element) => __awaiter(this, void 0, void 0, function* () {
                 if (element.title != "") {
                     const list = document.createElement('div');
                     list.setAttribute("class", "list");
@@ -83,6 +130,12 @@ function Main() {
                     h2.setAttribute("class", "list-title");
                     const ul = document.createElement("ul");
                     ul.setAttribute("class", "items");
+                    const item = yield _getItems(element.title);
+                    item.forEach(e => {
+                        const li = document.createElement('li');
+                        li.textContent = e.description;
+                        ul.appendChild(li);
+                    });
                     const form = document.createElement("form");
                     form.setAttribute("class", "itemForm");
                     const input = document.createElement("input");
@@ -101,7 +154,7 @@ function Main() {
                     list.appendChild(form);
                     listTemplate.appendChild(list);
                 }
-            });
+            }));
         });
     };
     this.addList = function (formData) {
@@ -109,14 +162,13 @@ function Main() {
             title: ""
         };
         formData.forEach((val) => { formObj.title = val.toString(); });
-        console.log(formObj);
         if (!_addList(formObj)) {
             console.log("Something went wrong");
         }
         console.log("List added");
         //window.location.reload();
     };
-    this.addItem = function (itemFormData) {
+    this.addItem = function (itemFormData, title) {
         const itemObj = {
             description: "",
             status: ""
@@ -125,11 +177,12 @@ function Main() {
             itemObj.description = element.toString();
             itemObj.status = "inactive";
         });
-        console.log(itemObj);
-        if (!_addItem(itemObj)) {
+        if (!_addItem(itemObj, title)) {
             console.log("Something went wrong");
+            return false;
         }
         console.log("Item added");
+        return true;
     };
 }
 function domContentLoadedPromise() {
@@ -161,13 +214,28 @@ domContentLoadedPromise().then(() => {
     listForm.addEventListener("submit", function (event) {
         event.preventDefault();
         const formData = new FormData(listForm);
-        console.log(formData);
         App.addList(formData);
+        setTimeout(() => {
+            window.location.reload();
+        }, 1000);
     });
     return dynamicLoadedPromise(".itemForm");
 }).then((clickedElement) => {
-    console.log('Clicked element:', clickedElement);
+    var _a;
     const itemData = new FormData(clickedElement);
-    console.log(itemData);
-    App.addItem(itemData);
+    const title = (_a = clickedElement.previousElementSibling) === null || _a === void 0 ? void 0 : _a.previousElementSibling;
+    if (title.textContent != null) {
+        addToListPromise(itemData, title.textContent).then(() => {
+            setTimeout(() => {
+                window.location.reload();
+            }, 2000);
+        });
+    }
 });
+function addToListPromise(itemData, title) {
+    return new Promise((resolve) => {
+        if (App.addItem(itemData, title)) {
+            return resolve();
+        }
+    });
+}
