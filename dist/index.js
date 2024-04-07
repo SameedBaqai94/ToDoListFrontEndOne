@@ -47,6 +47,39 @@ function Main() {
             }
         });
     }
+    function _removeList(title) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const requestOptions = {
+                method: "DELETE",
+            };
+            const getId = () => __awaiter(this, void 0, void 0, function* () {
+                try {
+                    const response = yield fetch(`http://localhost:8080/api/ToDoList/GetListId?title=${title}`);
+                    if (!response.ok) {
+                        throw new Error;
+                    }
+                    const data = yield response.json();
+                    return data;
+                }
+                catch (error) {
+                    console.log(`something went wrong with fetching GET ${error}`);
+                }
+            });
+            const id = yield getId();
+            if (!id)
+                return false;
+            try {
+                const response = yield fetch(`http://localhost:8080/api/ToDoList/DeleteList/${id.id}`, requestOptions);
+                if (!response.ok) {
+                    return false;
+                }
+                return true;
+            }
+            catch (error) {
+                return false;
+            }
+        });
+    }
     function _getItems(title) {
         return __awaiter(this, void 0, void 0, function* () {
             console.log(title);
@@ -64,7 +97,8 @@ function Main() {
                 }
             });
             const id = yield getId();
-            console.log(id.id);
+            if (!id)
+                return false;
             try {
                 console.log(`http://localhost:8080/api/Items/GetItemsByListId?listId=${id.id}`);
                 const response = yield fetch(`http://localhost:8080/api/Items/GetItemsByListId?listId=${id.id}`);
@@ -128,6 +162,9 @@ function Main() {
                     list.setAttribute("class", "list");
                     const h2 = document.createElement("h2");
                     h2.setAttribute("class", "list-title");
+                    const deleteButton = document.createElement("button");
+                    deleteButton.setAttribute("class", "deleteButton");
+                    deleteButton.textContent = "Remove";
                     const ul = document.createElement("ul");
                     ul.setAttribute("class", "items");
                     const item = yield _getItems(element.title);
@@ -150,11 +187,23 @@ function Main() {
                     form.appendChild(input);
                     form.appendChild(button);
                     list.appendChild(h2);
+                    list.appendChild(deleteButton);
                     list.appendChild(ul);
                     list.appendChild(form);
                     listTemplate.appendChild(list);
                 }
             }));
+        });
+    };
+    this.removeList = function (title) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const isSuccess = yield _removeList(title);
+            if (isSuccess) {
+                console.log("Something wrong");
+                return false;
+            }
+            console.log("list delete");
+            return true;
         });
     };
     this.addList = function (formData) {
@@ -185,10 +234,12 @@ function Main() {
         return true;
     };
 }
+const App = new Main();
 function domContentLoadedPromise() {
     return new Promise((resolve) => {
         if (document.readyState == "complete") {
             resolve();
+            document.removeEventListener('DOMContentLoaded', () => resolve());
         }
         else {
             document.addEventListener('DOMContentLoaded', () => resolve());
@@ -201,13 +252,21 @@ function dynamicLoadedPromise(selector) {
             event.preventDefault();
             const target = event.target;
             if (target.matches(selector)) {
+                console.log(target);
                 resolve(target);
+                document.removeEventListener('submit', eventListener); // Cleanup
             }
         };
         document.addEventListener('submit', eventListener);
     });
 }
-const App = new Main();
+function addToListPromise(itemData, title) {
+    return new Promise((resolve) => {
+        if (App.addItem(itemData, title)) {
+            return resolve();
+        }
+    });
+}
 domContentLoadedPromise().then(() => {
     const listForm = document.getElementById("listForm");
     App.getList();
@@ -219,11 +278,29 @@ domContentLoadedPromise().then(() => {
             window.location.reload();
         }, 1000);
     });
+    document.addEventListener('click', function (event) {
+        return __awaiter(this, void 0, void 0, function* () {
+            // Assuming all your buttons have a class 'deleteButton'
+            const target = event.target;
+            if (target.matches('.deleteButton')) {
+                event.preventDefault();
+                // Cast the target to an Element to access Element properties
+                const clickedButton = event.target;
+                // Assuming you want to get a title from a preceding element like before
+                const title = clickedButton.previousElementSibling;
+                if (title && title.textContent) {
+                    if ((yield App.removeList(title.textContent)) == false) {
+                        console.log("List Deleted");
+                    }
+                }
+            }
+        });
+    });
     return dynamicLoadedPromise(".itemForm");
 }).then((clickedElement) => {
-    var _a;
+    var _a, _b;
     const itemData = new FormData(clickedElement);
-    const title = (_a = clickedElement.previousElementSibling) === null || _a === void 0 ? void 0 : _a.previousElementSibling;
+    const title = (_b = (_a = clickedElement.previousElementSibling) === null || _a === void 0 ? void 0 : _a.previousElementSibling) === null || _b === void 0 ? void 0 : _b.previousElementSibling;
     if (title.textContent != null) {
         addToListPromise(itemData, title.textContent).then(() => {
             setTimeout(() => {
@@ -232,10 +309,3 @@ domContentLoadedPromise().then(() => {
         });
     }
 });
-function addToListPromise(itemData, title) {
-    return new Promise((resolve) => {
-        if (App.addItem(itemData, title)) {
-            return resolve();
-        }
-    });
-}
